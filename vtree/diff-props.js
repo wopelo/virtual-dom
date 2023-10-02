@@ -1,4 +1,7 @@
-var isObject = require("is-object")
+// var isObject = require("is-object")
+function isObject(obj) {
+    return Object.prototype.toString.call(obj) === '[object Object]'
+}
 var isHook = require("../vnode/is-vhook")
 
 module.exports = diffProps
