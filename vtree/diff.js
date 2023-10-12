@@ -56,19 +56,20 @@ function walk(a, b, patch, index) {
                 }
                 // 进一步比较子元素
                 apply = diffChildren(a, b, patch, apply, index)
-            } else {
+            } else { // 标签名、namespace、key有一个不相同，将重新创建元素的操作记录在apply中
                 apply = appendPatch(apply, new VPatch(VPatch.VNODE, a, b))
                 applyClear = true
             }
         } else {
+            // 将重新创建元素的操作记录在apply中
             apply = appendPatch(apply, new VPatch(VPatch.VNODE, a, b))
             applyClear = true
         }
     } else if (isVText(b)) {
-        if (!isVText(a)) {
+        if (!isVText(a)) { // b是文本节点，a不是，将重新创建文本节点的操作记录在apply中
             apply = appendPatch(apply, new VPatch(VPatch.VTEXT, a, b))
             applyClear = true
-        } else if (a.text !== b.text) {
+        } else if (a.text !== b.text) { // 如果文本不同，将重新创建文本节点的操作记录在apply中
             apply = appendPatch(apply, new VPatch(VPatch.VTEXT, a, b))
         }
     } else if (isWidget(b)) {
@@ -102,13 +103,15 @@ function diffChildren(a, b, patch, apply, index) {
         var rightNode = bChildren[i]
         index += 1
 
-        if (!leftNode) {
+        if (!leftNode) { // 这种情况存在于b比a的元素多
             if (rightNode) {
+                // 添加元素
                 // Excess nodes in b need to be added
                 apply = appendPatch(apply,
                     new VPatch(VPatch.INSERT, null, rightNode))
             }
         } else {
+            // 递归
             walk(leftNode, rightNode, patch, index)
         }
 
@@ -236,7 +239,13 @@ function undefinedKeys(obj) {
  * }
  * @param {Array} aChildren - 第一个比较数组
  * @param {Array} bChildren - 第二个比较数组
- * @return {Object} 返回一个对象
+ * @return {{
+ *  children: Array,
+ *  moves: {
+ *    removes: { key: any, from: number }[],
+ *    inserts: { key: any, to: number }[]
+ *  } | null
+ * }} 返回一个对象
  */
 function reorder(aChildren, bChildren) {
     // O(M) time, O(M) memory
@@ -380,18 +389,20 @@ function reorder(aChildren, bChildren) {
     var simulateItem
 
     console.log('第二次遍历bChildren', bKeys)
+    // 第二次遍历的目的是什么？
+    // newChildren的顺序和bChildren不相同，且有多余的null
 
     for (var k = 0; k < bChildren.length;) {
-        var wantedItem = bChildren[k]
-        simulateItem = simulate[simulateIndex]
+        var wantedItem = bChildren[k] // bChildren中，当前位置的元素
+        simulateItem = simulate[simulateIndex] // simulate中，当前需要处理的元素
 
         console.log('for循环', { index: k, wantedItem, simulateItem  })
 
         // remove items
-        // 这个while循环会删除从当前元素开始，连续的所有值为null的元素
+        // 这个while循环将从当前元素开始，所有连续的null添加到remove中
         while (simulateItem === null && simulate.length) {
             console.log('进入while循环', { simulate, simulateIndex })
-            // remove删除simulate中指定元素，并且返回 { index: number, key: null }
+            // remove删除simulate中指定元素，并且返回 { index: number, key: null }，会修改simulate
             removes.push(remove(simulate, simulateIndex, null))
             simulateItem = simulate[simulateIndex]
         }
@@ -402,8 +413,10 @@ function reorder(aChildren, bChildren) {
         if (!simulateItem || simulateItem.key !== wantedItem.key) {
             // if we need a key in this position...
             if (wantedItem.key) {
-                if (simulateItem && simulateItem.key) { // 这个分支处理 simulateItem.key !== wantedItem.key 的情况
+                if (simulateItem && simulateItem.key) {
+                    // 这个分支处理 simulateItem.key !== wantedItem.key 的情况，此时需要将simulateItem移动到正确的位置
                     console.log('处理 simulateItem.key !== wantedItem.key', bKeys[simulateItem.key], k + 1)
+
                     // if an insert doesn't put this key in place, it needs to move
                     if (bKeys[simulateItem.key] !== k + 1) { // 为什么要怎么判断？
                         removes.push(remove(simulate, simulateIndex, simulateItem.key))
@@ -444,7 +457,9 @@ function reorder(aChildren, bChildren) {
                 console.log('填充removes数组 case2', JSON.stringify(removes))
             }
         }
-        else { // 如果simulateItem不是undefined，且simulateItem和wantedItem的key相同，证明当前元素的位置是正确的，继续遍历
+        else { 
+            // 如果simulateItem不是undefined，且simulateItem和wantedItem的key相同，包括都没有key的情况
+            // 此时当前元素的位置是正确的，继续遍历
             simulateIndex++
             console.log('更新simulateIndex case2', simulateIndex)
 
@@ -453,9 +468,15 @@ function reorder(aChildren, bChildren) {
         }
     }
 
-    console.log('第二次遍历bChildren结束', { simulateIndex, simulate: JSON.stringify(simulate) })
+    console.log('第二次遍历bChildren结束', { 
+      simulateIndex,
+      simulate: JSON.stringify(simulate),
+      inserts,
+      removes,
+    })
 
     // remove all the remaining nodes from simulate
+    // simulate中还有未处理到的元素，都要删除，这些元素都是null
     while(simulateIndex < simulate.length) {
         simulateItem = simulate[simulateIndex]
         removes.push(remove(simulate, simulateIndex, simulateItem && simulateItem.key))
@@ -499,7 +520,7 @@ function reorder(aChildren, bChildren) {
 * @param {Array} arr 要删除元素的数组。
 * @param {Number} index 要删除的元素的索引。
 * @param {String|Number} key 要删除的元素的键。
-* @returns {Object} 一个包含被移除的元素索引和键的对象。
+* @returns {{ from: number, key: any }} 一个包含被移除的元素索引和键的对象。
 */
 function remove(arr, index, key) {
     console.log('remove执行', { arr, index, key })
