@@ -25,12 +25,16 @@
     "email": "matt@mattesch.info"
   },
   "dependencies": {
+    "@rollup/plugin-commonjs": "^25.0.5",
+    "@rollup/plugin-html": "^1.0.3",
+    "@rollup/plugin-node-resolve": "^15.2.3",
     "browser-split": "0.0.1",
     "error": "^4.3.0",
     "ev-store": "^7.0.0",
     "global": "^4.3.0",
     "is-object": "^1.0.1",
     "next-tick": "^0.2.2",
+    "rollup": "^4.0.2",
     "x-is-array": "0.1.0",
     "x-is-string": "0.1.0"
   },
@@ -42,8 +46,7 @@
     "run-browser": "^2.0.2",
     "tap-dot": "^1.0.0",
     "tap-spec": "^3.0.0",
-    "tape": "^4.0.0",
-    "zuul": "^2.1.1"
+    "tape": "^4.0.0"
   },
   "license": "MIT",
   "scripts": {
@@ -59,7 +62,8 @@
     "release": "npm run release-patch",
     "release-patch": "git checkout master && npm version patch && git push origin master --tags && npm publish",
     "release-minor": "git checkout master && npm version minor && git push origin master --tags && npm publish",
-    "release-major": "git checkout master && npm version major && git push origin master --tags && npm publish"
+    "release-major": "git checkout master && npm version major && git push origin master --tags && npm publish",
+    "build-demo": "rollup --config ./example/rollup.config.mjs"
   },
   "testling": {
     "files": "test/*.js",
