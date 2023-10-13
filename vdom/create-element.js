@@ -9,6 +9,12 @@ var handleThunk = require("../vnode/handle-thunk.js")
 
 module.exports = createElement
 
+/**
+ * 根据虚拟节点创建真实的DOM节点
+ * @param {Object} vnode - 虚拟节点对象，包含tagName、properties、children等属性
+ * @param {Object} opts - 可选参数对象，可能包含document和warn属性
+ * @returns {Object} 返回创建的DOM节点，如果vnode不是有效的虚拟节点，返回null
+ */
 function createElement(vnode, opts) {
     var doc = opts ? opts.document || document : document
     var warn = opts ? opts.warn : null

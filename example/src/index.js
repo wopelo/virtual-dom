@@ -6,26 +6,25 @@ const createElement = require("../../create-element.js")
 function render(key) {
   if (key >= 'A' && key <= 'Z') return h('div', { key }, [key])
 
-  return h('div', {}, [key])
+  return h('div', [key])
 }
 
 const oldList = ['A', 'B', 'x', 'y', 'E', 'F']
 const newList = ['B', 'A',' z', 'E', 'G', 'a', 'b']
 
 const oldTree = h('div', { key: 'root' }, oldList.map(key => render(key)))
-const newTree = h('div', { key: 'root' }, newList.map(key => render(key)))
+console.log('oldTree', oldTree)
 
 let rootNode = createElement(oldTree)
+console.log('rootNode', rootNode)
+
 document.body.appendChild(rootNode)
 
-console.log('oldTree', oldTree)
-console.log('newTree', newTree)
-// console.log('rootNode', rootNode)
-
 setTimeout(() => {
-  const patches = diff(oldTree, newTree)
+  const newTree = h('div', { key: 'root' }, newList.map(key => render(key)))
+  console.log('newTree', newTree)
 
-  console.log('diff结果', patches)
+  const patches = diff(oldTree, newTree)
 
   rootNode = patch(rootNode, patches)
   // console.log('patch结果', rootNode)

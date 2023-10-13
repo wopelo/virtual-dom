@@ -70,6 +70,14 @@ function h(tagName, properties, children) {
     return new VNode(tag, props, childNodes, key, namespace);
 }
 
+/**
+ * 将子节点添加到childNodes数组中
+ * @param {string|number|Object|Array|null|undefined} c - 子节点，可以是字符串、数字、子节点对象、子节点数组，或者null/undefined
+ * @param {Array} childNodes - 存储子节点的数组
+ * @param {string} tag - 父节点的标签名
+ * @param {Object} props - 父节点的属性对象
+ * @throws {Error} 如果c既不是字符串、数字、子节点对象、子节点数组，也不是null/undefined，将抛出异常
+ */
 function addChild(c, childNodes, tag, props) {
     if (typeof c === 'string') {
         childNodes.push(new VText(c));

@@ -247,6 +247,12 @@ var notClassId = /^\.|#/;
 
 var parseTag_1 = parseTag$1;
 
+/**
+ * 解析HTML标签，并根据解析结果对传入的属性对象进行修改
+ * @param {string} tag - HTML标签字符串
+ * @param {Object} props - 属性对象，可能包含id、className、namespace等属性
+ * @returns {string} 返回解析后的标签名，如果props包含namespace属性，则返回原始标签名，否则返回大写形式的标签名
+ */
 function parseTag$1(tag, props) {
     if (!tag) {
         return 'DIV';
@@ -463,6 +469,14 @@ function h$2(tagName, properties, children) {
     return new VNode(tag, props, childNodes, key, namespace);
 }
 
+/**
+ * 将子节点添加到childNodes数组中
+ * @param {string|number|Object|Array|null|undefined} c - 子节点，可以是字符串、数字、子节点对象、子节点数组，或者null/undefined
+ * @param {Array} childNodes - 存储子节点的数组
+ * @param {string} tag - 父节点的标签名
+ * @param {Object} props - 父节点的属性对象
+ * @throws {Error} 如果c既不是字符串、数字、子节点对象、子节点数组，也不是null/undefined，将抛出异常
+ */
 function addChild(c, childNodes, tag, props) {
     if (typeof c === 'string') {
         childNodes.push(new VText(c));
@@ -720,16 +734,24 @@ diff$3.exports.reorder = reorder;
 function diff$2(a, b) {
     var patch = { a: a };
     walk(a, b, patch, 0);
+
+    console.log('diff结果', patch);
+
     return patch
 }
 
 function walk(a, b, patch, index) {
-    if (a === b) {
+  console.log('walk', a, b, patch, index);
+
+    if (a === b) { // 当 a 和 b 是VNode时，即使key相同，判断也为false
+        console.log('a 和 b相同');
         return
     }
 
-    // apply是要进行的操作？值为VPatch对象或者VPatch对象数组
+    // apply目前看一开始都是undefined
     var apply = patch[index];
+    console.log('apply', apply, index);
+
     var applyClear = false;
 
     if (isThunk(a) || isThunk(b)) {
@@ -794,6 +816,10 @@ function walk(a, b, patch, index) {
 function diffChildren(a, b, patch, apply, index) {
     var aChildren = a.children;
     var orderedSet = reorder(aChildren, b.children);
+
+    console.log('执行reorder结果', orderedSet);
+
+    // 获取newChildren
     var bChildren = orderedSet.children;
 
     var aLen = aChildren.length;
@@ -808,12 +834,15 @@ function diffChildren(a, b, patch, apply, index) {
         if (!leftNode) { // 这种情况存在于b比a的元素多
             if (rightNode) {
                 // 添加元素
-                // Excess nodes in b need to be added
                 apply = appendPatch(apply,
                     new VPatch$1(VPatch$1.INSERT, null, rightNode));
+
+                // 举例：aChildren = [A, B, x, y, E, F], bChildren = [B, A, z, E, G, a, b]
+                // 此时，newChildren = [A, B, z, a, E, null, G, b]
+                // G和b的添加操作将被记录到apply中
             }
         } else {
-            // 递归
+            // 对相同位置的元素进行递归，以进一步diff元素子节点
             walk(leftNode, rightNode, patch, index);
         }
 
@@ -832,6 +861,12 @@ function diffChildren(a, b, patch, apply, index) {
     }
 
     return apply
+
+    // 举例：aChildren = [A, B, x, y, E, F], bChildren = [B, A, z, E, G, a, b]
+    // diffChildren将执行6次
+    // 第一次比较aChildren和bChildren，orderedSet.children = newChildren = [A, B, z, a, E, null, G, b]
+    // 后续五次分别是因为遍历newChildren时，从 A -> E，aChildren对应位置都有元素，进一步比较他们的子节点
+    // E之后，则是删除或者新增，不用进行子节点对比
 }
 
 function clearState(vNode, patch, index) {
@@ -1054,7 +1089,7 @@ function reorder(aChildren, bChildren) {
     // 2.如果该元素有key，但在bChildren中没有，则push null到newChildren，即newChildren中，该位置的元素变为null
     // 3.如果该元素无key，遍历过程中会逐步将aChildren中无key元素按顺序替换成bChildren中无key元素，即newChildren中，该位置的元素会替换成bChildren中的元素
     // 4.在3的基础上，如果bChildren中无key元素已经全部push到newChildren中，则将null push到newChildren，即newChildren中，该位置的元素变为null
-    console.log('遍历aChildren的之后', JSON.stringify(newChildren));
+    console.log('遍历aChildren的之后', newChildren);
 
     var lastFreeIndex = freeIndex >= bFree.length ?
         bChildren.length :
@@ -1082,7 +1117,7 @@ function reorder(aChildren, bChildren) {
     // 此时，newChildren由null、bChildren中的元素组成，但元素顺序可能和bChildren中的不同
     // 假设 aChildren = [A, B, x, y, E, F], bChildren = [B, A, z, E, G, a, b], 则目前 newChildren = [A, B, z, a, E, null, G, b]
 
-    console.log('遍历bChildren的之后', JSON.stringify(newChildren));
+    console.log('遍历bChildren的之后', newChildren);
 
     var simulate = newChildren.slice(); // 复制newChildren
     var simulateIndex = 0;
@@ -1123,7 +1158,7 @@ function reorder(aChildren, bChildren) {
                     if (bKeys[simulateItem.key] !== k + 1) { // 为什么要怎么判断？
                         removes.push(remove(simulate, simulateIndex, simulateItem.key));
 
-                        console.log('填充removes数组 case1', JSON.stringify(removes));
+                        console.log('填充removes数组 case1', removes);
 
                         simulateItem = simulate[simulateIndex];
                         console.log('更新simulateItem', simulateItem);
@@ -1132,7 +1167,7 @@ function reorder(aChildren, bChildren) {
                         // if the remove didn't put the wanted item in place, we need to insert it
                         if (!simulateItem || simulateItem.key !== wantedItem.key) {
                             inserts.push({key: wantedItem.key, to: k});
-                            console.log('填充inserts数组 case1', JSON.stringify(inserts));
+                            console.log('填充inserts数组 case1', inserts);
                         }
                         // items are matching, so skip ahead
                         else {
@@ -1142,12 +1177,12 @@ function reorder(aChildren, bChildren) {
                     }
                     else {
                         inserts.push({key: wantedItem.key, to: k});
-                        console.log('填充inserts数组 case2', JSON.stringify(inserts));
+                        console.log('填充inserts数组 case2', inserts);
                     }
                 }
                 else { // simulateItem为undefined或没有key，记录需要将当前wantedItem移动到下标k处
                     inserts.push({key: wantedItem.key, to: k});
-                    console.log('填充inserts数组 case3', JSON.stringify(inserts));
+                    console.log('填充inserts数组 case3', inserts);
                 }
                 k++;
                 console.log('继续遍历 case1', k);
@@ -1155,8 +1190,8 @@ function reorder(aChildren, bChildren) {
             // a key in simulate has no matching wanted key, remove it
             else if (simulateItem && simulateItem.key) {
                 removes.push(remove(simulate, simulateIndex, simulateItem.key));
-                console.log('更新simulate', JSON.stringify(simulate));
-                console.log('填充removes数组 case2', JSON.stringify(removes));
+                console.log('更新simulate', simulate);
+                console.log('填充removes数组 case2', removes);
             }
         }
         else { 
@@ -1172,7 +1207,7 @@ function reorder(aChildren, bChildren) {
 
     console.log('第二次遍历bChildren结束', { 
       simulateIndex,
-      simulate: JSON.stringify(simulate),
+      simulate,
       inserts,
       removes,
     });
@@ -1187,24 +1222,12 @@ function reorder(aChildren, bChildren) {
     // If the only moves we have are deletes then we can just
     // let the delete patch remove these items.
     // 如果没有要移动的，只有要删除的
-    if (removes.length === deletedItems && !inserts.length) {
-        console.log('执行reorder结果', JSON.stringify({
-            children: newChildren,
-            moves: null
-        }));
+    if (removes.length === deletedItems && !inserts.length) {  
         return {
             children: newChildren,
             moves: null
         }
     }
-
-    console.log('执行reorder结果', JSON.stringify({
-        children: newChildren,
-        moves: {
-            removes: removes,
-            inserts: inserts
-        }
-    }));
 
     return {
         children: newChildren,
@@ -1264,6 +1287,12 @@ function keyIndex(children) {
     }
 }
 
+/**
+ * 将补丁添加到应用补丁集合中
+ * @param {Array|Object} apply - 应用补丁集合，可以是数组或者单个补丁对象
+ * @param {Object} patch - 需要添加的补丁
+ * @returns {Array} 返回包含所有补丁的数组
+ */
 function appendPatch(apply, patch) {
     if (apply) {
         if (isArray$1(apply)) {
@@ -2028,6 +2057,12 @@ var handleThunk = handleThunk_1;
 
 var createElement_1$1 = createElement$2;
 
+/**
+ * 根据虚拟节点创建真实的DOM节点
+ * @param {Object} vnode - 虚拟节点对象，包含tagName、properties、children等属性
+ * @param {Object} opts - 可选参数对象，可能包含document和warn属性
+ * @returns {Object} 返回创建的DOM节点，如果vnode不是有效的虚拟节点，返回null
+ */
 function createElement$2(vnode, opts) {
     var doc = opts ? opts.document || document$2 : document$2;
     var warn = opts ? opts.warn : null;
@@ -2337,6 +2372,10 @@ function patch$2(rootNode, patches, renderOptions) {
 }
 
 function patchRecursive(rootNode, patches, renderOptions) {
+    // 通常情况，renderOptions = { patch: patchRecursive, render, }
+
+    // console.log('patches', patches)
+    
     var indices = patchIndices(patches);
 
     if (indices.length === 0) {
@@ -2415,26 +2454,25 @@ const createElement = createElement_1;
 function render(key) {
   if (key >= 'A' && key <= 'Z') return h('div', { key }, [key])
 
-  return h('div', {}, [key])
+  return h('div', [key])
 }
 
 const oldList = ['A', 'B', 'x', 'y', 'E', 'F'];
 const newList = ['B', 'A',' z', 'E', 'G', 'a', 'b'];
 
 const oldTree = h('div', { key: 'root' }, oldList.map(key => render(key)));
-const newTree = h('div', { key: 'root' }, newList.map(key => render(key)));
+console.log('oldTree', oldTree);
 
 let rootNode = createElement(oldTree);
+console.log('rootNode', rootNode);
+
 document.body.appendChild(rootNode);
 
-console.log('oldTree', oldTree);
-console.log('newTree', newTree);
-// console.log('rootNode', rootNode)
-
 setTimeout(() => {
-  const patches = diff(oldTree, newTree);
+  const newTree = h('div', { key: 'root' }, newList.map(key => render(key)));
+  console.log('newTree', newTree);
 
-  console.log('diff结果', patches);
+  const patches = diff(oldTree, newTree);
 
   rootNode = patch(rootNode, patches);
   // console.log('patch结果', rootNode)

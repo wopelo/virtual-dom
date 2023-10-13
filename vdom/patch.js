@@ -17,6 +17,10 @@ function patch(rootNode, patches, renderOptions) {
 }
 
 function patchRecursive(rootNode, patches, renderOptions) {
+    // 通常情况，renderOptions = { patch: patchRecursive, render, }
+
+    // console.log('patches', patches)
+    
     var indices = patchIndices(patches)
 
     if (indices.length === 0) {
