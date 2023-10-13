@@ -25,6 +25,7 @@ setTimeout(() => {
   console.log('newTree', newTree)
 
   const patches = diff(oldTree, newTree)
+  // patches形如 { a: oldTree, [key: number]: VirtualPatch[] }
 
   rootNode = patch(rootNode, patches)
   // console.log('patch结果', rootNode)

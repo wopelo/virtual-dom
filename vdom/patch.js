@@ -71,11 +71,16 @@ function applyPatch(rootNode, domNode, patchList, renderOptions) {
     return rootNode
 }
 
+/**
+ * 获取补丁对象中的索引
+ * @param {Object} patches - 补丁对象，键为索引，值为补丁内容
+ * @returns {Array} 返回补丁对象中的所有索引（除了"a"）组成的数组
+ */
 function patchIndices(patches) {
     var indices = []
 
     for (var key in patches) {
-        if (key !== "a") {
+        if (key !== "a") { // patches中，a是oldTree
             indices.push(Number(key))
         }
     }
